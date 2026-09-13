@@ -2,14 +2,14 @@
   "coordinate_system": "Y up, +Z front",
   "bounds": {
     "min": [
-      -3.0,
-      0.0,
-      -1.4249999523162842
+      -7.5,
+      -3.8999998569488525,
+      -3.8499999046325684
     ],
     "max": [
-      3.012500047683716,
-      3.200000047683716,
-      1.4415000677108765
+      7.5,
+      8.625,
+      6.150000095367432
     ]
   },
   "screen": {
@@ -24,21 +24,51 @@
   },
   "camera": {
     "position": [
-      5,
-      3.8,
-      7
+      5.4,
+      3.5,
+      9.4
     ],
     "target": [
-      0,
-      1.5,
-      0
+      -1,
+      0.6,
+      -0.3
     ],
-    "lens_mm": 42,
-    "vertical_fov_degrees": 29.990158258351972
+    "vertical_fov_degrees": 42
+  },
+  "mobile_camera": {
+    "position": [
+      3.3,
+      3.5,
+      10.5
+    ],
+    "target": [
+      -0.5,
+      1.0,
+      -0.3
+    ],
+    "vertical_fov_degrees": 52
   },
   "poster": {
     "width": 1600,
     "height": 1000
   },
-  "mesh_count": 8
+  "mesh_count": 17,
+  "environment": {
+    "reference": "references/7.jpg",
+    "city_image": "references/8.jpg",
+    "city_geometry": "one textured plane",
+    "details": [
+      "portrait monitor",
+      "mesh office chair",
+      "full desk and drawers",
+      "headphones",
+      "ceramic mug",
+      "books",
+      "shelving",
+      "plant",
+      "framed prints",
+      "window",
+      "rug"
+    ]
+  }
 }

@@ -117,9 +117,13 @@ for (const width of [360, 390, 768, 1440]) {
       await page.evaluate(() => document.fonts.ready);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBeTruthy();
       for (const link of await page.locator('a:visible').all()) {
-        if (await link.evaluate(el => Boolean(el.closest('[inert]')))) continue;
-        const rect = await link.boundingBox();
-        expect(rect?.height, (await link.textContent()) ?? '').toBeGreaterThanOrEqual(43);
+        // Read the interaction state and bounds together: 3D hydration may
+        // project the desktop between separate browser evaluations.
+        const target = await link.evaluate(el => el.closest('[inert]') ? null : {
+          height: el.getBoundingClientRect().height,
+          label: el.textContent ?? '',
+        });
+        if (target) expect(target.height, target.label).toBeGreaterThanOrEqual(43);
       }
     }
   });
@@ -127,7 +131,7 @@ for (const width of [360, 390, 768, 1440]) {
 
 test('missing personal data has honest empty states and no fake links', async ({ page }) => {
   await page.goto('/#desktop');
-  await expect(page.locator('.shortcut-pending')).toHaveCount(3);
+  await expect(page.locator('.shortcut-pending')).toHaveCount(0);
   await expect(page.locator('.shortcut-pending[href]')).toHaveCount(0);
   await expect(page.locator('a[href="#"]')).toHaveCount(0);
   await page.goto('/contact/');

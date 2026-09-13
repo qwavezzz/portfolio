@@ -1,4 +1,4 @@
 {
-  "prompt": "ORIGIN: Original Blender render by assets-source/build_workstation.py. Transparent background. 800px WebP encoding by scripts/optimize-poster.mjs.",
-  "createdAt": "2026-09-13T18:06:34.023Z"
+  "prompt": "ORIGIN: Blender render of original qwave room geometry (assets-source/build_workstation.py and room_details.py), incorporating the user-supplied references/8.jpg as the window photo. Composition reference: references/7.jpg. Dedicated portrait camera. Encoded by scripts/optimize-poster.mjs.",
+  "createdAt": "2026-09-13T19:29:09.158Z"
 }

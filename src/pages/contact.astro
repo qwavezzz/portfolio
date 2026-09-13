@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../lib/paths';
 import Shell from '../layouts/Shell.astro';
 import Icon from '../components/Icon.astro';
 import Signal from '../components/Signal.astro';
@@ -6,10 +7,10 @@ import { contacts } from '../data/portfolio';
 ---
 <Shell title="Контакты" page="contact">
   <section class="inner-page contact-page">
-    <div class="window-bar"><span class="mono">qwave / контакты</span><a class="text-link" href="/#desktop" data-return-desktop><Icon name="back" />На рабочий стол</a></div>
+    <div class="window-bar"><span class="mono">qwave / контакты</span></div>
     <div class="contact-layout"><div class="contact-copy"><h1 data-route-heading tabindex="-1">Есть идея?<br /><span class="soft-text">Давайте<br />обсудим.</span></h1><p class="contact-intro">Большой проект или короткий вопрос —<br />всё начинается с сообщения.</p>
       {contacts.length ? <div class="contact-links">{contacts.map(contact => <a href={contact.url} target={contact.url.startsWith('http') ? '_blank' : undefined} rel={contact.url.startsWith('http') ? 'noopener noreferrer' : undefined}><span class="mono">{contact.label}</span><span>{contact.display}</span><Icon name="arrow" /><span class="sr-only">{contact.url.startsWith('http') ? 'Откроется в новой вкладке' : ''}</span></a>)}</div> : <div class="contacts-empty"><Icon name="mail" /><div><p>Контакты скоро появятся.</p><span>Эта страница ещё обживается.</span></div></div>}
-    </div><div class="contact-art" aria-hidden="true"><Signal /><span class="contact-art-word">hello_</span><span class="mono">qwave / остаёмся на связи</span></div></div>
-    <a class="text-link page-return" href="/#desktop" data-return-desktop><Icon name="back" />Вернуться на рабочий стол</a>
+    </div><div class="contact-art" aria-hidden="true"><Signal /><span class="contact-art-word">hello_</span><span class="mono">My name is / qwave</span></div></div>
+    <a class="text-link page-return" href={withBase('/#desktop')} data-return-desktop><Icon name="back" />Вернуться на рабочий стол</a>
   </section>
 </Shell>

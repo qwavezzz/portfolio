@@ -138,7 +138,7 @@ def mat(name,color,metal=0,rough=.4):
     bs.inputs['Metallic'].default_value=metal;bs.inputs['Roughness'].default_value=rough
     return m
 black=mat('Ceramic graphite',(.023,.025,.029),.58,.29)
-desk=mat('Dark machined aluminum',(.019,.022,.026),.72,.31)
+desk=mat('Black ash desktop',(.019,.023,.030),.12,.58)
 edge=mat('Anodized edge highlights',(.18,.195,.215),.82,.28)
 rubber=mat('Rubber and cable',(.008,.009,.011),.05,.52)
 keys=mat('Keycaps',(.045,.047,.052),.1,.4)
@@ -163,7 +163,8 @@ def sphere(name,pos,scale,material):
     for p in o.data.polygons:p.use_smooth=True
     return o
 def cable(name,pts,r=.015,material=rubber):
-    curve=bpy.data.curves.new(name,'CURVE');curve.dimensions='3D';curve.resolution_u=10;curve.bevel_depth=r;curve.bevel_resolution=2
+    fine='mesh' in name.lower() or 'contour' in name.lower()
+    curve=bpy.data.curves.new(name,'CURVE');curve.dimensions='3D';curve.resolution_u=2 if fine else 5;curve.bevel_depth=r;curve.bevel_resolution=0 if fine else 2
     sp=curve.splines.new('BEZIER');sp.bezier_points.add(len(pts)-1)
     for p,co in zip(sp.bezier_points,pts):p.co=V(co);p.handle_left_type='AUTO';p.handle_right_type='AUTO'
     o=bpy.data.objects.new(name,curve);bpy.context.collection.objects.link(o);o.data.materials.append(material)
@@ -173,18 +174,13 @@ def mesh(name,verts,faces,material):
     me=bpy.data.meshes.new(name);me.from_pydata([V(p) for p in verts],[],faces);me.update()
     o=bpy.data.objects.new(name,me);bpy.context.collection.objects.link(o);o.data.materials.append(material);return o
 
-# Low architectural desk/plinth with real milled channels on top and fluted sides.
-box('Desk core',(0,.23,0),(6,.46,2.85),desk,.025,3)
-box('Desk lower shadow reveal',(0,.055,0),(5.91,.10,2.77),rubber,.015)
-box('Front silver rail',(0,.443,1.424),(6,.032,.020),edge,.006)
-box('Right silver rail',(2.991,.443,0),(.019,.032,2.85),edge,.005)
-for i in range(93):
-    xx=-2.95+i*5.90/92
-    box('Desk milled rib',(xx,.469,0),(.013,.017,2.76),edge,.003,1)
-    box('Front vertical flute',(xx,.265,1.432),(.012,.337,.019),desk,.004,1)
-for i in range(43):
-    zz=-1.34+i*2.68/42
-    box('Right vertical flute',(3.005,.265,zz),(.015,.337,.012),desk,.003,1)
+# Full-width desk. The top remains at the original height so the primary
+# display, keyboard and scroll-to-screen coordinate contract do not move.
+box('Desk core',(0,.373,.24),(10.8,.21,3.65),desk,.035,3)
+box('Desk lower shadow reveal',(0,.255,.24),(10.65,.06,3.51),rubber,.015)
+for i in range(150):
+    xx=-5.34+i*10.68/149
+    box('Fine desktop grain',(xx,.481,.24),(.006,.004,3.57),desk,0)
 
 # Large thin monitor; a contrasting metal gasket outlines the black bezel.
 MX=-.54;CY=1.98
@@ -195,6 +191,8 @@ screenmat=mat('Screen artwork',(.008,.008,.008),0,.55)
 nt=screenmat.node_tree;bs=nt.nodes.get('Principled BSDF');im=nt.nodes.new('ShaderNodeTexImage');im.image=bpy.data.images.load(str(screen_path));im.image.pack()
 nt.links.new(im.outputs['Color'],bs.inputs['Base Color']);nt.links.new(im.outputs['Color'],bs.inputs['Emission Color']);bs.inputs['Emission Strength'].default_value=.85
 bs.inputs['Specular IOR Level'].default_value=.08
+display_emission=nt.nodes.new('ShaderNodeEmission');display_emission.inputs['Strength'].default_value=.85
+nt.links.new(im.outputs['Color'],display_emission.inputs['Color']);nt.links.new(display_emission.outputs[0],nt.nodes.get('Material Output').inputs['Surface'])
 screen=mesh('Screen',[(MX-2.01,CY-1.125,-.004),(MX+2.01,CY-1.125,-.004),(MX+2.01,CY+1.125,-.004),(MX-2.01,CY+1.125,-.004)],[(0,1,2,3)],screenmat)
 uv=screen.data.uv_layers.new(name='Display UV')
 for poly in screen.data.polygons:
@@ -238,7 +236,7 @@ cable('Mouse cable',[(1.03,.54,.65),(1.05,.494,.51),(1.34,.493,.25),(1.40,.49,-.
 cable('Monitor power cable',[(MX,.68,-.29),(MX+.32,.485,-.54),(.62,.485,-.6),(1.79,.50,-.62)],.014)
 
 # Side tower: beveled enclosure, inset side panel, recessed front vents and ports.
-TX=2.16;TZ=-.26
+TX=4.43;TZ=-.26
 box('Tower feet',(TX,.513,TZ),(.65,.085,.86),rubber,.025,3)
 box('Tower chassis',(TX,1.36,TZ),(.80,1.63,1.08),black,.041,4)
 box('Tower side inset',(TX+.405,1.38,TZ),(.015,1.47,.91),desk,.014,3)
@@ -251,9 +249,13 @@ box('Tower status light',(TX-.232,1.989,TZ+.585),(.025,.005,.003),white,.001)
 for xx in (TX+.03,TX+.155):box('Tower USB recess',(xx,1.986,TZ+.576),(.072,.025,.013),rubber,.004)
 for i in range(18):box('Tower top vents',(TX-.305+i*.036,2.182,TZ-.06),(.013,.006,.52),rubber,.003,1)
 
-# Join only shared-material static geometry: retain Screen for interaction/transition.
+# Build the room around the unchanged main display, using the supplied city
+# photo as a single textured plane. There is no generated city geometry.
+exec(compile((SOURCE/'room_details.py').read_text(encoding='utf8'), str(SOURCE/'room_details.py'), 'exec'))
+
+# Join shared-material geometry; preserve both screens and the photo plane.
 bpy.ops.object.select_all(action='DESELECT')
-for material in (black,desk,edge,rubber,keys,silver,white):
+for material in (black,desk,edge,rubber,keys,silver,white,*room_materials):
     objs=[o for o in bpy.context.scene.objects if o.type=='MESH' and len(o.data.materials)==1 and o.data.materials[0]==material]
     if len(objs)>1:
         for o in objs:o.select_set(True)
@@ -262,16 +264,16 @@ for material in (black,desk,edge,rubber,keys,silver,white):
 
 scene=bpy.context.scene
 scene.world=bpy.data.worlds.new('Near black studio');scene.world.use_nodes=True
-scene.world.node_tree.nodes['Background'].inputs[0].default_value=(.10,.11,.13,1)
-scene.world.node_tree.nodes['Background'].inputs[1].default_value=.24
+scene.world.node_tree.nodes['Background'].inputs[0].default_value=(.18,.24,.38,1)
+scene.world.node_tree.nodes['Background'].inputs[1].default_value=.18
 def area(name,pos,power,size,target,color=(1,1,1)):
     data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size;data.color=color
     o=bpy.data.objects.new(name,data);scene.collection.objects.link(o);o.location=V(pos)
     o.rotation_euler=(Vector(V(target))-o.location).to_track_quat('-Z','Y').to_euler()
-area('Large softbox',(-3,6,4),1050,5,(0,1.1,0))
-area('Right rim',(4.5,4,-2.5),1150,3.6,(0,1.1,0))
-area('Front bounce',(1,2.8,5),200,4,(0,1.7,0))
-area('Top strip',(-.8,5,-1.2),450,2.5,(0,.5,0))
+area('Window blue hour',(-1,5,-2.3),750,6,(0,-.4,1.4),(.56,.68,1))
+area('Soft overhead fill',(-3,6,4),500,5,(0,-.8,0),(.74,.81,1))
+area('Right edge bounce',(6,3,2),270,3,(0,0,0),(.65,.76,1))
+area('Monitor spill',(-.54,1.9,.16),40,2,(-.5,.45,1.1),(.75,.85,1))
 
 # The ground belongs to the render only; the GLB has a clean compact envelope.
 groundmat=mat('Studio ground',(.005,.006,.008),.15,.5)
@@ -281,24 +283,30 @@ wn=scene.world.node_tree.nodes;wl=scene.world.node_tree.links
 camera_bg=wn.new('ShaderNodeBackground');camera_bg.inputs[0].default_value=(.001,.001,.001,1)
 camera_ray=wn.new('ShaderNodeLightPath');background_mix=wn.new('ShaderNodeMixShader')
 wl.new(camera_ray.outputs['Is Camera Ray'],background_mix.inputs[0]);wl.new(wn['Background'].outputs[0],background_mix.inputs[1]);wl.new(camera_bg.outputs[0],background_mix.inputs[2]);wl.new(background_mix.outputs[0],wn['World Output'].inputs['Surface'])
-camera_pos=(5,3.8,7);target=(0,1.5,0)
+camera_pos=(5.4,3.5,9.4);target=(-1,.6,-.3)
 camdata=bpy.data.cameras.new('Poster camera');cam=bpy.data.objects.new('Poster camera',camdata);scene.collection.objects.link(cam)
-cam.location=V(camera_pos);cam.rotation_euler=(Vector(V(target))-cam.location).to_track_quat('-Z','Y').to_euler();camdata.lens=42;scene.camera=cam
-scene.render.engine='CYCLES';scene.cycles.samples=48;scene.cycles.use_denoising=True
+cam.location=V(camera_pos);cam.rotation_euler=(Vector(V(target))-cam.location).to_track_quat('-Z','Y').to_euler();camdata.lens=36/(1.6*2*math.tan(math.radians(42)/2));scene.camera=cam
+scene.render.engine='CYCLES';scene.cycles.samples=32;scene.cycles.use_denoising=True
 scene.render.resolution_x=1600;scene.render.resolution_y=1000;scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG';scene.render.image_settings.color_mode='RGBA';scene.render.film_transparent=True
-scene.view_settings.view_transform='AgX';scene.view_settings.look='AgX - Medium High Contrast';scene.view_settings.exposure=.35
+scene.view_settings.view_transform='AgX';scene.view_settings.look='AgX - Medium High Contrast';scene.view_settings.exposure=.5
 scene.render.filepath=str(IMAGES/'monitor-poster.png')
 
 modelobjs=[o for o in scene.objects if o.type=='MESH' and o!=ground]
 bounds=[(o.matrix_world@Vector(c)) for o in modelobjs for c in o.bound_box]
 mins=[min(v[i] for v in bounds) for i in range(3)];maxs=[max(v[i] for v in bounds) for i in range(3)]
 gmin=[mins[0],mins[2],-maxs[1]];gmax=[maxs[0],maxs[2],-mins[1]]
-metadata={'coordinate_system':'Y up, +Z front','bounds':{'min':gmin,'max':gmax},'screen':{'name':'Screen','center':[MX,CY,-.004],'width':4.02,'height':2.25},'camera':{'position':camera_pos,'target':target,'lens_mm':42,'vertical_fov_degrees':math.degrees(2*math.atan(36/1.6/(2*42)))},'poster':{'width':1600,'height':1000},'mesh_count':len(modelobjs)}
+metadata={'coordinate_system':'Y up, +Z front','bounds':{'min':gmin,'max':gmax},'screen':{'name':'Screen','center':[MX,CY,-.004],'width':4.02,'height':2.25},'camera':{'position':camera_pos,'target':target,'vertical_fov_degrees':42},'mobile_camera':{'position':[3.3,3.5,10.5],'target':[-.5,1.0,-.3],'vertical_fov_degrees':52},'poster':{'width':1600,'height':1000},'mesh_count':len(modelobjs),'environment':{'reference':'references/7.jpg','city_image':'references/8.jpg','city_geometry':'one textured plane','details':['portrait monitor','mesh office chair','full desk and drawers','headphones','ceramic mug','books','shelving','plant','framed prints','window','rug']}}
 (SOURCE/'workstation-metadata.json').write_text(json.dumps(metadata,indent=2)+'\n',encoding='utf8')
 bpy.ops.object.select_all(action='DESELECT')
 for o in modelobjs:o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=str(MODELS/'workstation.glb'),export_format='GLB',use_selection=True,export_apply=True,export_cameras=False,export_lights=False,export_yup=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'workstation.blend'))
+bpy.ops.render.render(write_still=True)
+cam.location=V((3.3,3.5,10.5));cam.rotation_euler=(Vector(V((-.5,1.0,-.3)))-cam.location).to_track_quat('-Z','Y').to_euler()
+camdata.sensor_fit='VERTICAL';camdata.sensor_height=24;camdata.lens=24/(2*math.tan(math.radians(52)/2))
+scene.render.resolution_x=800;scene.render.resolution_y=1728
+(SOURCE/'renders').mkdir(exist_ok=True)
+scene.render.filepath=str(SOURCE/'renders'/'monitor-poster-mobile.png')
 bpy.ops.render.render(write_still=True)
 print('QWAVE_ASSETS_COMPLETE',json.dumps(metadata))

@@ -30,7 +30,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; text-underline-offset: 5px; }
 a, button { touch-action: manipulation; }
-button:focus-visible, a:focus-visible { outline: 2px solid var(--color-text); outline-offset: 5px; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--color-text); outline-offset: 5px; }
 [tabindex='-1']:focus { outline: none; }
 button:disabled { cursor: default; }
 h1, h2, h3, p, figure { margin: 0; }
@@ -54,12 +54,13 @@ img { max-width: 100%; display: block; }
 .header-note { display: flex; align-items: center; gap: 46px; color: var(--color-muted); font: 10px var(--font-mono); letter-spacing: .035em; }
 .header-cross { font-size: 28px; color: var(--color-text); font-weight: 400; }
 .hero { position: relative; min-height: 730px; height: calc(100svh - 88px); max-height: 1100px; isolation: isolate; overflow: clip; }
-.hero-title-block { position: relative; z-index: 2; pointer-events: none; padding-top: 47px; margin-left: var(--page-gutter); width: max-content; max-width: calc(100% - 2 * var(--page-gutter)); }
+.hero-title-block { position: relative; z-index: 3; pointer-events: none; padding-top: 47px; margin-left: var(--page-gutter); width: max-content; max-width: calc(100% - 2 * var(--page-gutter)); }
 .hero h1 { font-size: clamp(116px, 15.6vw, 250px); font-weight: 600; letter-spacing: -.045em; line-height: .9; }
 .title-period { color: var(--color-muted); }
 .hero-title-caption { display: block; font: 11px var(--font-mono); letter-spacing: .13em; margin-top: 25px; }
-.hero-scene { position: absolute; width: min(79%, 1260px); height: calc(100% - 55px); right: -1%; top: 24px; z-index: 1; }
-.scene-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transition: opacity 300ms ease; }
+.hero-scene { position: absolute; inset: 0; z-index: 1; }
+.scene-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 300ms ease; }
+.hero-scrim { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg, rgb(8 8 8 / .86), rgb(8 8 8 / .30) 33%, transparent 62%), linear-gradient(0deg, rgb(8 8 8 / .80), transparent 38%); }
 .hero-live, .hero-canvas { position: absolute; inset: 0; }
 .hero-live { z-index: 1; }
 .hero-canvas { transition: opacity 400ms ease; }
@@ -91,14 +92,14 @@ img { max-width: 100%; display: block; }
 .desktop-field::before { content: ''; position: absolute; inset: 0; z-index: -2; background-image: radial-gradient(var(--color-grid) .7px, transparent .7px); background-size: 22px 22px; opacity: .65; pointer-events: none; }
 .desktop-wallpaper { position: absolute; width: min(72%, 970px); inset: 0 0 0 auto; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: -1; pointer-events: none; }
 .signal { position: relative; container-type: inline-size; width: 100%; }
-.signal pre { font-family: var(--font-mono); font-weight: 400; margin: 0; font-size: 1.64cqw; line-height: 1.12; white-space: pre; letter-spacing: 0; user-select: none; }
+.signal pre { font-family: var(--font-mono); font-weight: 400; margin: 0; font-size: var(--ascii-size, 1.64cqw); line-height: 1.12; white-space: pre; letter-spacing: 0; user-select: none; }
 .desktop-wallpaper .signal { width: 84%; margin-top: -20px; color: #999996; }
 .wallpaper-word { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); font-size: clamp(90px, 13.3vw, 215px); line-height: .9; letter-spacing: -.07em; font-weight: 650; color: var(--color-text); padding-right: 12px; }
-.wallpaper-caption { margin-top: 0; font-size: 10px; letter-spacing: .2em; color: var(--color-muted); }
-.shortcut-grid { width: 280px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 8px; position: relative; z-index: 1; }
+.wallpaper-caption { margin-top: 16px; font-size: 10px; letter-spacing: .2em; color: var(--color-muted); }
+.shortcut-grid { width: 280px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 8px; }
 .shortcut { display: flex; align-items: center; justify-content: start; flex-direction: column; text-align: center; padding: 12px 6px; min-height: 128px; gap: 10px; background: #090909; border: 1px solid transparent; min-width: 0; }
-a.shortcut { transition: background var(--duration-fast); }
-a.shortcut:hover { background: var(--color-surface-raised); }
+a.shortcut, summary.shortcut { transition: background var(--duration-fast); }
+a.shortcut:hover, summary.shortcut:hover { background: var(--color-surface-raised); }
 .shortcut:active .shortcut-label { color: var(--color-bg); background: var(--color-text); }
 .shortcut-image { position: relative; display: block; padding: 4px; width: 60px; height: 60px; }
 .shortcut-image > svg { width: 52px; height: 52px; stroke-width: 1.2px; }
@@ -107,6 +108,27 @@ a.shortcut:hover { background: var(--color-surface-raised); }
 .shortcut-label { font: 14px/1.5 var(--font-mono); padding: 0 4px; overflow-wrap: anywhere; }
 .shortcut-subtitle { font-size: 11px; font-family: var(--font-mono); line-height: 1.4; color: var(--color-muted); margin-top: -5px; }
 .shortcut-pending { color: var(--color-muted); }
+portfolio-folder { display: block; min-width: 0; }
+portfolio-folder summary { cursor: pointer; list-style: none; touch-action: manipulation; }
+portfolio-folder summary::-webkit-details-marker { display: none; }
+portfolio-folder details[open] > summary .shortcut-label { background: var(--color-text); color: var(--color-bg); }
+portfolio-folder:not([data-enhanced]):has(details[open]) { grid-column: 1 / -1; }
+.portfolio-window { display: flex; flex-direction: column; min-width: 0; margin-top: 24px; border: 1px solid var(--color-border); background: var(--color-surface); }
+portfolio-folder[data-enhanced] .portfolio-window { position: absolute; z-index: 3; top: 40px; right: 40px; width: min(740px, calc(100% - 370px)); height: min(480px, calc(100% - 80px)); margin: 0; animation: folder-open var(--duration-page) var(--ease-out); }
+.portfolio-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 5px 6px 5px 20px; background: var(--color-text); color: var(--color-bg); }
+.portfolio-titlebar > div { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.portfolio-titlebar h3 { font: 14px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.portfolio-titlebar svg { width: 22px; height: 22px; }
+.portfolio-close { display: grid; place-items: center; min-width: 44px; min-height: 44px; flex-shrink: 0; padding: 0; border: 0; background: transparent; }
+.portfolio-close:hover { background: var(--color-bg); color: var(--color-text); }
+.portfolio-close:focus-visible { outline-color: var(--color-bg); outline-offset: -4px; }
+.portfolio-content { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 24px; }
+.portfolio-projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 24px 16px; align-content: start; }
+.portfolio-projects .shortcut { background: transparent; }
+.portfolio-projects .shortcut:hover { background: var(--color-surface-raised); }
+.portfolio-empty { padding-block: 24px; color: var(--color-muted); line-height: 1.6; }
+.portfolio-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding: 14px 20px; border-top: 1px solid var(--color-grid); color: var(--color-muted); font-size: 11px; }
+@keyframes folder-open { from { transform: translateY(8px); } to { transform: translateY(0); } }
 .desktop-note { position: absolute; bottom: 36px; left: 36px; display: flex; align-items: center; gap: 16px; color: var(--color-muted); }
 .desktop-note p { font: 11px/1.8 var(--font-mono); white-space: pre-line; }
 .note-bracket { font-size: 44px; font-weight: 300; }
@@ -121,9 +143,6 @@ a.shortcut:hover { background: var(--color-surface-raised); }
 .text-link { min-height: 44px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 11px; }
 .text-link:hover { text-decoration: underline; }
 .text-link svg { width: 19px; height: 19px; }
-.project-index { margin: 80px var(--page-gutter); display: grid; gap: 32px; }
-.project-index article { padding-bottom: 24px; border-bottom: 1px solid var(--color-grid); }
-.project-index p { margin-block: 12px; color: var(--color-muted); }
 .inner-page { max-width: 1440px; margin: 0 auto; padding: 0 var(--page-gutter); }
 .window-bar { min-height: 88px; display: flex; justify-content: space-between; align-items: center; gap: 24px; color: var(--color-muted); }
 .window-bar > .mono { font-size: 11px; }
@@ -186,12 +205,10 @@ a.shortcut:hover { background: var(--color-surface-raised); }
 
 @media (min-width: 1700px) {
   .hero-title-block { padding-top: 75px; }
-  .hero-scene { right: 2%; width: 75%; }
   .hero-intro { margin-top: 150px; }
 }
 @media (max-width: 1100px) {
   .header-note { display: none; }
-  .hero-scene { width: 86%; right: -8%; top: 85px; height: 80%; }
   .hero-intro { margin-top: 135px; }
   .hero-title-block { padding-top: 64px; }
   .desktop-wallpaper { width: 70%; right: -6%; }
@@ -214,7 +231,7 @@ a.shortcut:hover { background: var(--color-surface-raised); }
   .hero-title-block { padding-top: 38px; }
   .hero h1 { font-size: clamp(104px, 24vw, 178px); line-height: .94; }
   .hero-title-caption { margin-top: 18px; font-size: 9px; letter-spacing: .12em; }
-  .hero-scene { width: 100%; height: 380px; top: 172px; right: 0; }
+  .hero-scrim { background: linear-gradient(180deg, rgb(8 8 8 / .58), transparent 28%, transparent 51%, rgb(8 8 8 / .84) 78%); }
   .hero-intro { margin-top: 361px; width: auto; margin-right: var(--page-gutter); }
   .hero-intro p { font-size: 16px; max-width: 290px; }
   .hero-intro .button { margin-top: 24px; width: 100%; max-width: 360px; }
@@ -235,6 +252,10 @@ a.shortcut:hover { background: var(--color-surface-raised); }
   .shortcut-image > svg { width: 43px; height: 43px; }
   .shortcut-label { font-size: 13px; }
   .shortcut-subtitle { font-size: 10px; margin-top: -2px; }
+  portfolio-folder[data-enhanced] .portfolio-window { inset: 20px 12px auto; width: auto; height: min(480px, calc(100svh - 150px)); min-height: 240px; }
+  .portfolio-content { padding: 20px 16px; }
+  .portfolio-projects { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 16px 8px; }
+  .portfolio-status { padding: 12px 16px; font-size: 10px; }
   .desktop-wallpaper { width: 100%; height: 310px; min-height: 310px; inset: auto; position: relative; order: 1; margin-top: 24px; }
   .desktop-wallpaper .signal { width: 90%; color: #81817e; }
   .wallpaper-word { font-size: 26vw; top: 47%; }
@@ -307,6 +328,7 @@ a.shortcut:hover { background: var(--color-surface-raised); }
 .has-monitor-flight .hero-intro,
 .has-monitor-flight .hero-bottom,
 .has-monitor-flight .scene-toggle { opacity: clamp(0, calc(1 - var(--flight-progress, 0) * 5), 1); }
+.has-monitor-flight .hero-scrim { opacity: clamp(0, calc(1 - var(--flight-progress, 0) * 4), 1); }
 .has-monitor-flight .hero-live { opacity: clamp(0, calc((1 - var(--flight-progress, 0)) * 10), 1); }
 .has-monitor-flight .desktop-slot { position: relative; z-index: 4; margin-top: -100svh; }
 .has-monitor-flight .desktop { width: 100%; margin: 0; scroll-margin: 0; transform-origin: 0 0; }

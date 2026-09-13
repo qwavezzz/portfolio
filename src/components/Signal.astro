@@ -1,5 +1,7 @@
 ---
 import { signalArt } from '../lib/ascii';
-interface Props { class?: string; }
+interface Props { class?: string; art?: string; }
+const { art = signalArt() } = Astro.props;
+const columns = Math.max(...art.split('\n').map(line => line.length), 1);
 ---
-<div class:list={['signal', Astro.props.class]} aria-hidden="true"><pre>{signalArt()}</pre></div>
+<div class:list={['signal', Astro.props.class]} style={Astro.props.art ? `--ascii-size: ${100 / (columns * 0.6)}cqw` : undefined} aria-hidden="true"><pre>{art}</pre></div>

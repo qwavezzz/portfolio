@@ -22,7 +22,7 @@ export interface Contact {
   url: string;
 }
 
-// Only qwave is confirmed. Add actual content here when it is available.
+// Personal details beyond the name will be supplied later.
 export const profile = {
   name: 'qwave',
   specialization: '',
@@ -30,7 +30,17 @@ export const profile = {
   approach: '',
 };
 
-export const projects: Project[] = [];
+export const projects: Project[] = [
+  {
+    id: 'dari-sinergii',
+    title: 'Дары Синергии',
+    summary: 'Сайт компании «Дары Синергии».',
+    role: 'Сайт компании',
+    url: 'https://dari-sinergii.ru',
+    icon: 'browser',
+    order: 1,
+  },
+];
 export const services: Service[] = [];
 export const contacts: Contact[] = [];
 

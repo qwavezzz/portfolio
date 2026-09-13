@@ -1,43 +1,42 @@
 ---
+import { withBase } from '../lib/paths';
 import Shell from '../layouts/Shell.astro';
 import Icon from '../components/Icon.astro';
 import Signal from '../components/Signal.astro';
+import desktopArt from '../data/desktop-ascii.txt?raw';
 import Shortcut from '../components/Shortcut.astro';
+import PortfolioFolder from '../components/PortfolioFolder.astro';
 import HeroExperience from '../components/three/HeroExperience';
-import { profile, publishedProjects } from '../data/portfolio';
+import { profile } from '../data/portfolio';
 ---
 <Shell>
   <div class="monitor-journey"><div class="journey-stage">
   <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-title-block"><h1 id="hero-title">{profile.name}<span class="title-period">.</span></h1><span class="hero-title-caption">ПЕРСОНАЛЬНОЕ ПОРТФОЛИО</span></div>
+    <div class="hero-title-block"><h1 id="hero-title">{profile.name}<span class="title-period">.</span></h1><span class="hero-title-caption"></span></div>
     <div class="hero-scene">
-      <img class="scene-poster" src="/images/monitor-poster.webp" srcset="/images/monitor-poster-mobile.webp 800w, /images/monitor-poster.webp 1600w" sizes="(max-width: 767px) 100vw, 79vw" alt="Тёмное рабочее место с монитором, клавиатурой и компьютером" width="1600" height="1000" fetchpriority="high" />
+      <picture><source media="(max-width: 767px)" srcset={withBase('/images/monitor-poster-mobile.webp')} /><img class="scene-poster" src={withBase('/images/monitor-poster.webp')} alt="Ночная комната qwave: два монитора, кресло и стол с наушниками у окна с видом на город" width="1600" height="1000" fetchpriority="high" /></picture>
     </div>
     <HeroExperience client:load />
-    <div class="hero-intro"><p>{profile.specialization || 'Добро пожаловать\nв моё цифровое пространство.'}</p><a class="button button-primary" href="#desktop" data-enter-desktop>Открыть рабочий стол<Icon name="arrow" /></a></div>
-    <div class="hero-bottom"><span class="mono">Прокрутите, чтобы войти в монитор.</span><a class="scroll-cue" href="#desktop" data-enter-desktop><span>ВОЙТИ В ЭКРАН</span><Icon name="down" /></a><span class="hero-coordinate mono" aria-hidden="true">[ q / personal space ]</span></div>
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-intro"><p>{profile.specialization || 'Добро пожаловать\nПрокрутите вниз, чтобы увидеть больше.'}</p><a class="button button-primary" href="#desktop" data-enter-desktop>Открыть рабочий стол<Icon name="arrow" /></a></div>
+    <div class="hero-bottom"><span class="mono"></span><a class="scroll-cue" href="#desktop" data-enter-desktop><span>ВОЙТИ В ЭКРАН</span><Icon name="down" /></a><span class="hero-coordinate mono" aria-hidden="true"></span></div>
   </section>
   </div></div>
 
   <div class="desktop-slot">
   <section id="desktop" class="desktop" aria-labelledby="desktop-title">
-    <header class="desktop-topbar"><div class="desktop-title"><Icon name="grid" /><h2 id="desktop-title" tabindex="-1">Рабочий стол</h2><span class="desktop-slash">/</span><span class="mono">{profile.name}</span></div><span class="desktop-system mono"><span class="status-square" aria-hidden="true"></span>Личное пространство</span></header>
+    <header class="desktop-topbar"><div class="desktop-title"><Icon name="grid" /><h2 id="desktop-title" tabindex="-1">Рабочий стол</h2><span class="desktop-slash">/</span><span class="mono">{profile.name}</span></div><span class="desktop-system mono"><span class="status-square" aria-hidden="true"></span></span></header>
     <div class="desktop-field">
-      <div class="desktop-wallpaper" aria-hidden="true"><Signal /><span class="wallpaper-word">{profile.name}</span><span class="wallpaper-caption mono">MAKE IT PERSONAL.</span></div>
+      <div class="desktop-wallpaper" aria-hidden="true"><Signal art={desktopArt} /><span class="wallpaper-word">{profile.name}</span><span class="wallpaper-caption mono">MAKE IT PERSONAL.</span></div>
       <div class="shortcut-grid" aria-label="Работы и разделы">
-        {publishedProjects.length ? publishedProjects.map(project => <Shortcut id={`project-${project.id}`} title={project.title} icon={project.icon} url={project.url} external subtitle={project.role} />) : <>
-          <Shortcut title="Проект 01" icon="browser" subtitle="Скоро здесь" />
-          <Shortcut title="Проект 02" icon="folder" subtitle="Скоро здесь" />
-          <Shortcut title="Проект 03" icon="file" subtitle="Скоро здесь" />
-        </>}
+        <PortfolioFolder />
         <Shortcut id="shortcut-about" title="Обо мне" icon="person" url="/about/" subtitle="Знакомство и услуги" />
-        <Shortcut id="shortcut-contact" title="Контакты" icon="mail" url="/contact/" subtitle="На связи" />
+        <Shortcut id="shortcut-contact" title="Контакты" icon="mail" url="/contact/" subtitle="Готов помочь" />
       </div>
-      <div class="desktop-note"><span class="note-bracket" aria-hidden="true">[</span><p>{publishedProjects.length ? 'Каждый ярлык — отдельная история.\nНажмите, чтобы открыть.' : 'Это начало. Работы появятся здесь.\nА пока — немного пространства для нового.'}</p><span class="note-bracket" aria-hidden="true">]</span></div>
-      <span class="desktop-corner mono" aria-hidden="true">qwave / desktop</span>
+      <div class="desktop-note"><span class="note-bracket" aria-hidden="true">[</span><p>{'Работы — в папке «Портфолио».\nНажмите, чтобы открыть.'}</p><span class="note-bracket" aria-hidden="true">]</span></div>
+      <span class="desktop-corner mono" aria-hidden="true"></span>
     </div>
-    <nav class="taskbar" aria-label="Навигация рабочего стола"><span class="taskbar-brand">[q]</span><a href="/about/"><Icon name="person" /><span>Обо мне</span></a><a href="/contact/"><Icon name="mail" /><span>Контакты</span></a><span class="taskbar-spacer"></span><a href="/" aria-label="К первому экрану"><Icon name="power" /><span class="taskbar-home-label">В начало</span></a></nav>
+    <nav class="taskbar" aria-label="Навигация рабочего стола"><span class="taskbar-brand">[q]</span><a href={withBase('/about/')}><Icon name="person" /><span>Обо мне</span></a><a href={withBase('/contact/')}><Icon name="mail" /><span>Контакты</span></a><span class="taskbar-spacer"></span><a href={withBase('/')} aria-label="К первому экрану"><Icon name="power" /><span class="taskbar-home-label">В начало</span></a></nav>
   </section>
   </div>
-  {publishedProjects.length > 0 && <section class="project-index" aria-label="Сведения о проектах">{publishedProjects.map(p => <article><h3><a href={p.url} target="_blank" rel="noopener noreferrer">{p.title}<span class="sr-only"> — новая вкладка</span></a></h3><p>{p.summary}</p><span class="mono">{p.role}</span></article>)}</section>}
 </Shell>

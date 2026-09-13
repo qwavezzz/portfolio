@@ -40,6 +40,11 @@ for (const [name, width, height] of [['desktop', 1440, 960], ['mobile', 390, 844
     await expect(page.locator('#desktop')).toHaveAttribute('inert', '');
     expect((await page.locator('#desktop').boundingBox())!.width).toBeCloseTo(halfwayWidth, 0);
     await progress(page, 1);
+    await page.locator('#shortcut-portfolio').click();
+    await expect(page.locator('#portfolio-window')).toBeVisible();
+    await expect(page.locator('#project-dari-sinergii')).toBeInViewport();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#shortcut-portfolio')).toBeFocused();
     await page.setViewportSize({ width, height: height + 100 });
     await expect.poll(async () => (await page.locator('#desktop').boundingBox())!.y).toBeCloseTo(0, 0);
     await expect(page.locator('#desktop')).not.toHaveAttribute('inert');

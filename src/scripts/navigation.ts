@@ -1,5 +1,6 @@
 import type { TransitionBeforePreparationEvent } from 'astro:transitions/client';
 import { navigate } from 'astro:transitions/client';
+import { withBase } from '../lib/paths';
 
 let firstLoad = true;
 let isHistoryNavigation = false;
@@ -24,7 +25,7 @@ document.addEventListener('click', async (event) => {
   if (anchor.hash === '#desktop' && anchor.pathname === location.pathname) {
     if (document.body.classList.contains('has-monitor-flight')) {
       event.preventDefault();
-      await navigate('/#desktop');
+      await navigate(withBase('/#desktop'));
       window.dispatchEvent(new Event('qwave:skip-intro'));
     }
     requestAnimationFrame(() => document.getElementById('desktop-title')?.focus({ preventScroll: true }));
@@ -62,11 +63,14 @@ document.addEventListener('astro:before-preparation', (event) => {
 });
 
 document.addEventListener('astro:page-load', () => {
-  const isDesktop = location.pathname === '/' && location.hash === '#desktop';
+  const isDesktop = location.pathname === withBase('/') && location.hash === '#desktop';
   const returning = isDesktop && (explicitDesktopReturn || isHistoryNavigation);
   if (returning && shortcutId && document.getElementById(shortcutId)) {
     if (explicitDesktopReturn || sourceWasFlight) {
-      const desktopTop = (document.getElementById('desktop')?.getBoundingClientRect().top ?? 0) + window.scrollY;
+      // The desktop itself may still be projected into the monitor while the
+      // returning scene hydrates. Restore against its untransformed layout slot.
+      const desktopTop = (document.querySelector('.desktop-slot')?.getBoundingClientRect().top ?? 0) + window.scrollY;
+      if (sourceWasFlight) window.dispatchEvent(new Event('qwave:skip-intro'));
       window.scrollTo({ top: sourceWasFlight ? desktopTop + sourceDesktopOffset : sourceScroll, behavior: 'instant' });
     }
     document.getElementById(shortcutId)?.focus({ preventScroll: true });

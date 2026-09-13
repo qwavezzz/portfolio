@@ -1,10 +1,12 @@
 ---
 import Icon from './Icon.astro';
+import { withBase } from '../lib/paths';
 interface Props { title: string; icon: string; url?: string; external?: boolean; id?: string; subtitle?: string; }
 const { title, icon, url, external = false, id, subtitle } = Astro.props;
 const Tag = url ? 'a' : 'div';
+const href = url?.startsWith('/') && !url.startsWith('//') ? withBase(url) : url;
 ---
-<Tag class:list={['shortcut', { 'shortcut-pending': !url }]} href={url} id={id} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} data-shortcut={url && !external ? '' : undefined} aria-label={external ? `${title} — откроется в новой вкладке` : undefined}>
+<Tag class:list={['shortcut', { 'shortcut-pending': !url }]} href={href} id={id} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} data-shortcut={url && !external ? '' : undefined} aria-label={external ? `${title} — откроется в новой вкладке` : undefined}>
   <span class="shortcut-image"><Icon name={icon} />{external && <span class="shortcut-external"><Icon name="arrow" /></span>}</span>
   <span class="shortcut-label">{title}</span>
   {subtitle && <span class="shortcut-subtitle">{subtitle}</span>}

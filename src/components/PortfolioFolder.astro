@@ -1,0 +1,73 @@
+---
+import Icon from './Icon.astro';
+import Shortcut from './Shortcut.astro';
+import { publishedProjects } from '../data/portfolio';
+
+const count = publishedProjects.length;
+const plural = new Intl.PluralRules('ru').select(count);
+const countLabel = `${count} ${plural === 'one' ? 'проект' : plural === 'few' ? 'проекта' : 'проектов'}`;
+---
+<portfolio-folder>
+  <details>
+    <summary id="shortcut-portfolio" class="shortcut" aria-controls="portfolio-window">
+      <span class="shortcut-image"><Icon name="folder" /></span>
+      <span class="shortcut-label">Портфолио</span>
+      <span class="shortcut-subtitle">Мои работы</span>
+    </summary>
+    <section id="portfolio-window" class="portfolio-window" aria-labelledby="portfolio-title">
+      <header class="portfolio-titlebar">
+        <div><Icon name="folder" /><h3 id="portfolio-title" tabindex="-1">Портфолио</h3></div>
+        <button type="button" class="portfolio-close" aria-label="Закрыть папку «Портфолио»" hidden><Icon name="close" /></button>
+      </header>
+      <div class="portfolio-content">
+        {count > 0 ? <div class="portfolio-projects" aria-label="Проекты">
+          {publishedProjects.map(project => <Shortcut id={`project-${project.id}`} title={project.title} icon={project.icon} url={project.url} external subtitle={project.role} />)}
+        </div> : <p class="portfolio-empty">Здесь появятся мои работы.</p>}
+      </div>
+      <footer class="portfolio-status mono"><span>{countLabel}</span>{count > 0 && <span>Сайты откроются в новой вкладке</span>}</footer>
+    </section>
+  </details>
+</portfolio-folder>
+
+<script>
+  class PortfolioFolder extends HTMLElement {
+    private cleanup?: () => void;
+
+    connectedCallback() {
+      this.cleanup?.();
+      const details = this.querySelector('details')!;
+      const shortcut = this.querySelector('summary')!;
+      const title = this.querySelector<HTMLElement>('#portfolio-title')!;
+      const closeButton = this.querySelector<HTMLButtonElement>('.portfolio-close')!;
+      const desktop = this.closest('#desktop')!;
+      const events = new AbortController();
+      const options = { signal: events.signal };
+      this.dataset.enhanced = '';
+      closeButton.hidden = false;
+
+      const close = () => {
+        details.open = false;
+        shortcut.focus({ preventScroll: true });
+      };
+      details.addEventListener('toggle', () => {
+        if (details.open) title.focus({ preventScroll: true });
+      }, options);
+      closeButton.addEventListener('click', close, options);
+      desktop.addEventListener('keydown', event => {
+        if ((event as KeyboardEvent).key !== 'Escape' || !details.open) return;
+        event.preventDefault();
+        close();
+      }, options);
+      // A non-modal folder leaves the desktop usable. Close when keyboard focus
+      // leaves it so a mobile window never covers the next focused shortcut.
+      this.addEventListener('focusout', event => {
+        if (event.relatedTarget instanceof Node && !this.contains(event.relatedTarget)) details.open = false;
+      }, options);
+      this.cleanup = () => events.abort();
+    }
+
+    disconnectedCallback() { this.cleanup?.(); }
+  }
+
+  if (!customElements.get('portfolio-folder')) customElements.define('portfolio-folder', PortfolioFolder);
+</script>

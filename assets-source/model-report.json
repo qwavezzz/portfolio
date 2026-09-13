@@ -1,0 +1,59 @@
+{
+  "source": "assets-source/build_workstation.py + room_details.py",
+  "beforeBytes": 4081060,
+  "bytes": 2368788,
+  "meshes": 17,
+  "materials": 17,
+  "triangles": 92614,
+  "textures": [
+    {
+      "name": "8",
+      "mime": "image/jpeg",
+      "size": [
+        800,
+        450
+      ],
+      "bytes": 58086
+    },
+    {
+      "name": "secondary-display",
+      "mime": "image/png",
+      "size": [
+        640,
+        1080
+      ],
+      "bytes": 6893
+    },
+    {
+      "name": "screen-artwork",
+      "mime": "image/png",
+      "size": [
+        1536,
+        864
+      ],
+      "bytes": 27584
+    }
+  ],
+  "citySource": "references/8.jpg",
+  "citySHA256": "37fc461c91b010f5dae71c708f551f9d48f0ed2408d17542e79f85e3145a9a69",
+  "cityOriginalBytesPreserved": true,
+  "optimization": [
+    "weld",
+    "dedup",
+    "prune",
+    "quantize"
+  ],
+  "decoderRequired": false,
+  "screenBounds": {
+    "min": [
+      -2.549999952316284,
+      0.8549840021938169,
+      -0.004000000189989805
+    ],
+    "max": [
+      1.4700000286102295,
+      3.105016035953156,
+      -0.004000000189989805
+    ]
+  }
+}

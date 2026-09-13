@@ -1,34 +1,39 @@
-# qwave workstation asset
+﻿# qwave night-room asset
 
-Original procedural 3D scene built for the qwave Personal OS portfolio. The reference at `references/1.png` informed the restrained black metal materials and lighting; no reference pixels, third-party scene, personal claims, or third-party branding are included.
+An editable Blender room built around the original qwave monitor. `references/7.jpg` supplies the requested atmosphere and object inventory. The exact bytes of the user-provided `references/8.jpg` are embedded as the window view; there is no city geometry.
 
-## Files
+## Source and outputs
 
-- `build_workstation.py`: complete reproducible generator, including original pixel font, projected ASCII torus, geometry, materials, lights, and camera.
-- `screen-artwork.png`: original offline display texture; packed into the blend and GLB.
-- `workstation.blend`: editable Blender source. Studio lights and ground are retained here.
-- `workstation-metadata.json`: exact runtime bounds, screen coordinates, and camera.
-- `../public/models/workstation.glb`: browser asset; geometry and packed texture only.
-- `../public/images/monitor-poster.png`: matching 1600 × 1000 RGBA studio render for loading, no-WebGL and reduced-motion fallbacks; transparent background and hidden floor.
+- `build_workstation.py`: reproducible entry point; main computer, materials, cameras, export and both poster renders.
+- `room_details.py`: desk and drawers, portrait monitor, mesh office chair, mug, headphones, books, shelving, plant, original wall prints, floor, rug and window.
+- `workstation.blend`: editable source with packed images and lighting.
+- `screen-artwork.png`, `secondary-display.png`: original decorative display textures, generated from code.
+- `workstation-metadata.json`: screen bounds, desktop/mobile cameras and scene bounds.
+- `model-report.json`: measured size, triangles, textures, screen-bound verification and city-image SHA-256 after optimization.
+- `renders/`: desktop and portrait poster sources. The mobile image is rendered with its own camera, not resized from the landscape view.
+- `../public/models/workstation.glb`: optimized browser scene, with all images embedded.
+- `../public/images/monitor-poster*.webp`: loading, reduced-motion and unavailable-WebGL fallbacks.
 
 ## Rebuild
 
-Run Blender in background mode from the project directory:
+From the project directory:
 
 ```powershell
-& 'C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe' -b --factory-startup --python assets-source/build_workstation.py
+& 'C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe' --background --factory-startup --python assets-source/build_workstation.py
+node scripts/optimize-model.mjs
+node scripts/optimize-poster.mjs
 ```
 
-The generator owns only the output paths above. It creates a fresh background scene and does not touch a scene open in the Blender UI. Rendering uses Cycles, 48 samples and denoising.
+Blender creates a fresh background scene; it does not modify the scene open in the Blender UI. Cycles renders two images at 32 samples with denoising. The saved `.blend` retains the desktop camera. `render_transparent_poster.py` can re-render that saved desktop view.
 
-## Browser integration
+glTF Transform welds vertices, removes duplicates and unused data, and quantizes attributes. Quantization is decoded natively by Three.js without an external decoder. The optimizer checks the main screen's world bounds within 0.001 units and reopens the written GLB to verify the city JPEG byte for byte. Both monitor displays and the photograph use unlit materials so room lights cannot wash out their content.
 
-The GLB uses Y up with the monitor facing +Z. The desk rests at Y=0. Static geometry is joined by material to minimize draw calls; the display remains a separate mesh named `Screen`. Materials use standard glTF metal/rough PBR, with an emissive display. No external decoder or HDR environment is required.
+## Runtime contract
 
-Screen center is `[-0.54, 1.98, -0.004]`, size `4.02 × 2.25`. The poster camera is `[5, 3.8, 7]`, looking at `[0, 1.5, 0]`, with approximately `29.99°` vertical FOV at 1.6 aspect. The screen is decorative; all content and navigation must also exist in HTML.
+Y up, +Z toward the viewer. Main screen center `[-0.54, 1.98, -0.004]`, width `4.02`, height `2.25`; it remains a separate `Screen` node. `Portrait_Display` and `City_Backdrop` also have stable names. Other geometry is joined by shared material. Camera configurations are read directly from `workstation-metadata.json` by the browser.
 
-The poster studio uses large soft area lights; browser lighting can use a neutral ambient fill and three directional lights to reveal graphite edges. The poster uses native alpha with the studio floor hidden, matching the transparent WebGL canvas. The floor remains editable in the Blender source and is excluded from the GLB. Exact min/max bounds are in the JSON metadata. The final GLB has 8 meshes, 8 materials, 35,366 triangles, and one embedded PNG texture; it requires no external decoder.
+One canvas uses demand rendering, a DPR cap of 1.5 and one cached 2048px shadow map. Lighting is dynamic PBR for the room, unlit for the screens/photo. All objects and lights are stationary, so the shadow map does not need recomputing when the camera moves. No collision system or physics is needed for the fixed camera path. The portrait camera crops peripheral furniture to keep the main display legible.
 
 ## Provenance
 
-Model, bitmap font, and display artwork were authored procedurally for this project by Codex. The raster origin is `assets-source/build_workstation.py`; raster provenance is embedded with Impeccable's `embed-prompt` command after generation. The string `qwave` was supplied by the user. `PERSONAL OS`, `WORK`, `ABOUT`, and `CONTACT` describe the fictional display shell and are not personal facts.
+Furniture, accessories, original print graphics and both display textures were authored procedurally for this project. `qwave` was supplied by the user. The city photograph was supplied by the user as `references/8.jpg`; no claim of original authorship is made for it. Reference 7 informs the composition and is not copied into the shipped scene. Poster images are Blender renders of this geometry and photograph; WebP files carry sidecar provenance.
