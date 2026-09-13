@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+test-results/
+playwright-report/
+*.log
+*.blend1
+.impeccable/review/
+.env
+.env.*
+!.env.example

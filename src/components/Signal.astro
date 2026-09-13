@@ -1,0 +1,5 @@
+---
+import { signalArt } from '../lib/ascii';
+interface Props { class?: string; }
+---
+<div class:list={['signal', Astro.props.class]} aria-hidden="true"><pre>{signalArt()}</pre></div>

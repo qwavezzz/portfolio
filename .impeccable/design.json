@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-13T00:00:00Z",
+  "title": "Design System: qwave — Personal OS",
+  "extensions": {
+    "typographyMeta": {
+      "display": { "displayName": "Имя qwave", "purpose": "Первый экран; сверхкрупный масштаб закреплён пользовательским референсом." },
+      "body": { "displayName": "Основной текст", "purpose": "Редакционные разделы; mobile 16px, ширина до 52ch." },
+      "label": { "displayName": "Ярлык", "purpose": "Подписи SVG-ярлыков; mobile 13px, при ширине до 389px — 12px." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "monitor-flight", "value": "180svh scroll", "purpose": "Удерживаемая 3D-сцена; камера входит в экран, совмещённый HTML становится полноэкранным. Обратный скролл разворачивает движение, кнопка пропускает его." },
+      { "name": "duration-fast", "value": "140ms", "purpose": "Hover первичной кнопки и ярлыков; CSS ease." },
+      { "name": "duration-page", "value": "220ms", "purpose": "Переход документа." },
+      { "name": "poster-fade", "value": "300ms ease", "purpose": "Скрытие постера после готовности настоящей 3D-сцены." },
+      { "name": "canvas-fade", "value": "400ms ease", "purpose": "Появление canvas после готовности сцены." },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "Глобальное сокращение анимаций; view transitions и плавная прокрутка отключены, 3D заменён постером." }
+    ],
+    "breakpoints": [
+      { "name": "narrow-max", "value": "389px" },
+      { "name": "mobile-max", "value": "767px" },
+      { "name": "compact-max", "value": "1100px" },
+      { "name": "wide-min", "value": "1700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Открыть рабочий стол",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Светлая прямоугольная ссылка с SVG-стрелкой; инверсия при наведении и самостоятельный клавиатурный фокус.",
+      "html": "<a class=\"ds-button-primary\" href=\"#desktop\">Открыть рабочий стол<svg width=\"22\" height=\"22\" viewBox=\"0 0 32 32\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M7 25 25 7M7 7h18v18\"/></svg></a>",
+      "css": ".ds-button-primary { display:inline-flex; min-height:56px; padding:16px 22px; align-items:center; justify-content:space-between; gap:34px; font-family:var(--font-sans, 'Golos Text Variable', Arial, sans-serif); font-size:13px; font-weight:500; background:var(--color-text, #f2f2ee); color:var(--color-bg, #080808); border:1px solid var(--color-text, #f2f2ee); border-radius:0; text-decoration:none; transition:background var(--duration-fast, 140ms), color var(--duration-fast, 140ms); } .ds-button-primary svg { flex:0 0 auto; } .ds-button-primary:hover { background:var(--color-bg, #080808); color:var(--color-text, #f2f2ee); } .ds-button-primary:focus-visible { outline:2px solid var(--color-text, #f2f2ee); outline-offset:5px; } @media (prefers-reduced-motion:reduce) { .ds-button-primary { transition-duration:.01ms; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Личный компьютер, открытый для исследования",
+    "overview": "Посетитель сначала видит физический монитор в тёмном пространстве, затем получает доступ к его рабочему столу. Внешняя сцена предметная и объёмная; цифровой интерфейс плоский, резкий и монохромный. Общее связующее звено — экран: графика на мониторе заранее показывает характер рабочего стола.\n\nТри слоя системы: чёрная среда, белая дискретная графика, уверенная крупная типографика. Гротеск несёт личность автора, моноширинный набор поддерживает метафору ОС. Пустое пространство так же важно, как плотные графические фрагменты.",
+    "keyCharacteristics": [
+      "Чёрное поле и белый знак; высокая контрастность без обязательного неона.",
+      "Крупные плотные заголовки рядом с небольшими служебными подписями.",
+      "Пиксельная и ASCII-графика с узнаваемым силуэтом.",
+      "Ярлыки как основной способ исследовать работы и разделы.",
+      "Смещённый редакционный ритм для личного рассказа и услуг."
+    ],
+    "rules": [],
+    "dos": [
+      "Сохранять узнаваемый переход от физического монитора к его цифровому рабочему столу.",
+      "Делать большие заголовки выразительными, а подписи и длинные тексты — читаемыми.",
+      "Оставлять спокойное поле вокруг ярлыков и поверхностей чтения.",
+      "Переносить ритм референса 4 в содержание «Обо мне» и прайса.",
+      "Проверять контраст, длинные названия, focus, reduced-motion и мобильный порядок на реализации."
+    ],
+    "donts": [
+      "Подменять рабочий стол обычным лендингом с рядами одинаковых карточек.",
+      "Копировать интерфейс игры целиком, включая игровые действия и чужой брендинг.",
+      "Набирать весь сайт мелким пиксельным шрифтом или помещать важный текст внутрь canvas.",
+      "Включать постоянный глитч, неоновое свечение, звук или обязательный ввод команд.",
+      "Выдавать предложенные шрифты за точно определённые из референса.",
+      "Публиковать выдуманные цены и работы либо утверждать, что документы прошли браузерную проверку."
+    ]
+  }
+}

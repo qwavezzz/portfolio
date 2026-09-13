@@ -1,0 +1,44 @@
+{
+  "coordinate_system": "Y up, +Z front",
+  "bounds": {
+    "min": [
+      -3.0,
+      0.0,
+      -1.4249999523162842
+    ],
+    "max": [
+      3.012500047683716,
+      3.200000047683716,
+      1.4415000677108765
+    ]
+  },
+  "screen": {
+    "name": "Screen",
+    "center": [
+      -0.54,
+      1.98,
+      -0.004
+    ],
+    "width": 4.02,
+    "height": 2.25
+  },
+  "camera": {
+    "position": [
+      5,
+      3.8,
+      7
+    ],
+    "target": [
+      0,
+      1.5,
+      0
+    ],
+    "lens_mm": 42,
+    "vertical_fov_degrees": 29.990158258351972
+  },
+  "poster": {
+    "width": 1600,
+    "height": 1000
+  },
+  "mesh_count": 8
+}

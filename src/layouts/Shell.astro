@@ -1,0 +1,43 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '@fontsource-variable/golos-text';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/cyrillic-400.css';
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { profile, isPreview } from '../data/portfolio';
+interface Props { title?: string; description?: string; page?: string; }
+const { title = 'Личное пространство', description = 'Персональное портфолио qwave. Работы, немного обо мне и контакты — на одном рабочем столе.', page = 'home' } = Astro.props;
+---
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#080808" />
+    <meta name="description" content={description} />
+    {isPreview && <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:title" content={`${profile.name} — ${title}`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{profile.name} — {title}</title>
+    <ClientRouter />
+  </head>
+  <body data-page={page}>
+    <a class="skip-link" href="#main">К содержимому</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="qwave — начало"><span class="brand-mark" aria-hidden="true">[q]</span><span>{profile.name}</span></a>
+      <nav class="header-nav" aria-label="Основная навигация">
+        <a href="/#desktop" data-desktop-link aria-current={page === 'home' ? 'page' : undefined}>Работы<span class="nav-dot" aria-hidden="true"></span></a>
+        <a href="/about/" aria-current={page === 'about' ? 'page' : undefined}>Обо мне<span class="nav-dot" aria-hidden="true"></span></a>
+        <a href="/contact/" aria-current={page === 'contact' ? 'page' : undefined}>Контакты<span class="nav-dot" aria-hidden="true"></span></a>
+      </nav>
+      <span class="header-note">PERSONAL SPACE<span class="header-cross" aria-hidden="true">+</span></span>
+    </header>
+    <main id="main" tabindex="-1"><slot /></main>
+    <footer class="site-footer"><span>© {new Date().getFullYear()} {profile.name}</span><span class="footer-caption">Собственное цифровое пространство.</span><a href="/" class="text-link">В начало <Icon name="arrow" /></a></footer>
+    <div id="route-error" class="route-error" role="alert" hidden><span>Не удалось открыть раздел.</span><a id="route-retry" data-astro-reload href="/">Попробовать ещё раз</a><button type="button" data-dismiss-error aria-label="Закрыть сообщение"><Icon name="close" /></button></div>
+    <script src="../scripts/navigation.ts"></script>
+  </body>
+</html>
