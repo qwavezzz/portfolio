@@ -39,10 +39,12 @@ for (const [name, width, height] of [['desktop', 1440, 960], ['mobile', 390, 844
     expect(await page.evaluate(() => (window as any).__pagesSession)).toBe(true);
     await page.locator('[data-return-desktop]').first().click();
     await expect(page.locator('#shortcut-about')).toBeFocused();
+    await expect(page.locator('body')).not.toHaveClass(/has-monitor-flight/);
     await page.locator('#shortcut-contact').click();
     await expect(page).toHaveURL(url('contact/'));
     await page.goBack();
     await expect(page.locator('#shortcut-contact')).toBeFocused();
+    await expect(page.locator('body')).not.toHaveClass(/has-monitor-flight/);
     await page.goto(url('about/'));
     await page.reload();
     await expect(page).toHaveTitle('qwave — Обо мне');

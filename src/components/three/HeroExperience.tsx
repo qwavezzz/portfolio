@@ -47,8 +47,12 @@ export default function HeroExperience() {
   useEffect(() => {
     const hero = container.current?.closest<HTMLElement>('.hero');
     if (!hero || !allowed || !ready || failed || reduced) return;
+    // A direct desktop entry or SPA return must stay in normal document flow.
+    // Starting a new flight here races the router's scroll/focus restoration
+    // and can project a shortcut away while the visitor is clicking it.
+    if (location.hash === '#desktop') return;
     // Never move a visitor back to the introduction because a model was late.
-    if (window.scrollY > hero.offsetHeight && location.hash !== '#desktop') return;
+    if (window.scrollY > hero.offsetHeight) return;
     return createMonitorFlight(hero);
   }, [allowed, ready, failed, reduced]);
 
