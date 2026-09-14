@@ -1,12 +1,14 @@
 import { withBase } from '../../lib/paths';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { createRoot, extend, useFrame, useThree, type ReconcilerRoot } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { useEffect, useRef } from 'react';
-import { ACESFilmicToneMapping, Mesh, PerspectiveCamera, Vector3 } from 'three';
+import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, HemisphereLight, Mesh, PerspectiveCamera, PointLight, Vector3 } from 'three';
 import layout from '../../../assets-source/workstation-metadata.json';
 import { flight, onFlightChange, placeDesktop } from '../../lib/monitor-flight';
 
-function Scene({ active, onReady }: { active: boolean; onReady: () => void }) {
+extend({ AmbientLight, DirectionalLight, HemisphereLight, PointLight });
+
+function Scene({ active, compact, onReady }: { active: boolean; compact: boolean; onReady: () => void }) {
   const { scene } = useGLTF(withBase('/models/workstation.glb'));
   const { camera, invalidate, size, gl } = useThree();
   const first = useRef(true);
@@ -82,13 +84,71 @@ function Scene({ active, onReady }: { active: boolean; onReady: () => void }) {
   return <>
     <ambientLight intensity={0.32} />
     <hemisphereLight args={['#b3c5e4', '#10131b', 0.9]} />
-    <directionalLight position={[-4, 7, 5]} color="#bdcbe8" intensity={2.5} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-9} shadow-camera-right={9} shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5} shadow-camera-far={32} shadow-bias={-0.0002} shadow-normalBias={0.025} />
+    <directionalLight position={[-4, 7, 5]} color="#bdcbe8" intensity={2.5} castShadow shadow-mapSize={compact ? [1024, 1024] : [2048, 2048]} shadow-camera-left={-9} shadow-camera-right={9} shadow-camera-top={9} shadow-camera-bottom={-9} shadow-camera-near={0.5} shadow-camera-far={32} shadow-bias={-0.0002} shadow-normalBias={0.025} />
     <directionalLight position={[4, 5, -2]} color="#789bda" intensity={1.7} />
     <pointLight position={[-0.54, 1.9, 0.3]} color="#c4d7ed" intensity={4} distance={4} decay={2} />
     <primitive object={scene} dispose={null} />
   </>;
 }
 
+class ModelBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onError(); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
 export default function Workstation({ active, onReady, onError }: { active: boolean; onReady: () => void; onError: () => void }) {
-  return <Canvas shadows frameloop={active ? 'demand' : 'never'} dpr={[1, 1.5]} camera={{ position: [5.4, 3.5, 9.4], fov: 42, near: 0.05, far: 80 }} gl={{ alpha: true, antialias: true, powerPreference: 'low-power', toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 }} onCreated={({ gl }) => { gl.shadowMap.autoUpdate = false; gl.domElement.addEventListener('webglcontextlost', onError, { once: true }); }}><Scene active={active} onReady={onReady} /></Canvas>;
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const root = useRef<ReconcilerRoot<HTMLCanvasElement> | null>(null);
+  const [configured, setConfigured] = useState(false);
+  const [compact] = useState(() => matchMedia('(pointer: coarse), (max-width: 767px)').matches);
+
+  useEffect(() => {
+    const element = canvas.current!;
+    const renderer = createRoot(element);
+    root.current = renderer;
+    let disposed = false;
+    const fail = () => { if (!disposed) onError(); };
+    const size = () => {
+      const { width, height } = element.parentElement!.getBoundingClientRect();
+      return { width, height, top: 0, left: 0 };
+    };
+    const observer = new ResizeObserver(() => {
+      renderer.configure({ size: size() }).catch(fail);
+    });
+    element.addEventListener('webglcontextlost', fail);
+    // Own the async setup so a rejected WebGL initialization reaches our
+    // fallback too. React boundaries only catch errors during rendering.
+    renderer.configure({
+      size: size(), shadows: true, frameloop: 'never',
+      dpr: compact ? 1 : [1, 1.5],
+      camera: { position: [5.4, 3.5, 9.4], fov: 42, near: 0.05, far: 80 },
+      gl: { alpha: true, antialias: !compact, powerPreference: 'low-power', toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 },
+      onCreated: ({ gl }) => { gl.shadowMap.autoUpdate = false; },
+    }).then(() => {
+      if (disposed) return;
+      observer.observe(element.parentElement!);
+      setConfigured(true);
+    }).catch(fail);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      element.removeEventListener('webglcontextlost', fail);
+      renderer.unmount();
+      root.current = null;
+    };
+  }, [compact, onError]);
+
+  useEffect(() => {
+    if (!configured || !root.current) return;
+    const renderer = root.current;
+    let cancelled = false;
+    renderer.configure({ frameloop: active ? 'demand' : 'never' }).then(() => {
+      if (!cancelled) renderer.render(<ModelBoundary onError={onError}><Suspense fallback={null}><Scene active={active} compact={compact} onReady={onReady} /></Suspense></ModelBoundary>);
+    }).catch(() => { if (!cancelled) onError(); });
+    return () => { cancelled = true; };
+  }, [configured, active, compact, onReady, onError]);
+
+  return <canvas ref={canvas} style={{ width: '100%', height: '100%' }} />;
 }

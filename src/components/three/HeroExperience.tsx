@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createMonitorFlight } from '../../lib/monitor-flight';
 
 const Workstation = lazy(() => import('./Workstation'));
@@ -18,6 +18,8 @@ export default function HeroExperience() {
   const [failed, setFailed] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const handleReady = useCallback(() => setReady(true), []);
+  const handleError = useCallback(() => setFailed(true), []);
 
   useEffect(() => {
     const media = matchMedia('(prefers-reduced-motion: reduce)');
@@ -65,7 +67,7 @@ export default function HeroExperience() {
 
   return <div className="hero-live" ref={container}>
     <div className="hero-canvas" aria-hidden="true" data-scene-state={failed ? 'fallback' : ready && allowed ? 'ready' : 'poster'} style={{ opacity: ready && allowed && !failed ? 1 : 0 }}>
-      {allowed && !failed && (visible || ready) && <SceneBoundary onError={() => setFailed(true)}><Suspense fallback={null}><Workstation active={visible} onReady={() => setReady(true)} onError={() => setFailed(true)} /></Suspense></SceneBoundary>}
+      {allowed && !failed && (visible || ready) && <SceneBoundary onError={handleError}><Suspense fallback={null}><Workstation active={visible} onReady={handleReady} onError={handleError} /></Suspense></SceneBoundary>}
     </div>
     {initialized && !reduced && !failed && <button className="scene-toggle mono" onClick={toggle} aria-pressed={allowed} aria-label={allowed ? 'Отключить 3D и оставить изображение' : 'Включить 3D'}><span className={allowed ? 'toggle-light is-on' : 'toggle-light'} aria-hidden="true" />{allowed ? '3D включено' : 'Включить 3D'}</button>}
   </div>;

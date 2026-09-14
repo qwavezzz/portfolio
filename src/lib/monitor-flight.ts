@@ -40,6 +40,9 @@ export function createMonitorFlight(hero: HTMLElement) {
   gsap.registerPlugin(ScrollTrigger);
   const abort = new AbortController();
   const originalStyle = desktop.getAttribute('style');
+  const scrollStyles = [document.documentElement, document.body].map(element => ({
+    element, value: element.style.getPropertyValue('scroll-behavior'),
+  }));
   let geometry: Point[] | undefined;
   let previousInteractive = true;
   let trigger: ScrollTrigger;
@@ -47,6 +50,7 @@ export function createMonitorFlight(hero: HTMLElement) {
   flight.enabled = true;
   document.body.classList.add('has-monitor-flight');
   let viewportHeight = hero.clientHeight;
+  let viewportWidth = hero.clientWidth;
   const distance = () => Math.round(hero.clientHeight * 1.8);
   journey.style.setProperty('--flight-travel', `${distance()}px`);
 
@@ -55,7 +59,7 @@ export function createMonitorFlight(hero: HTMLElement) {
       desktop.style.transform = '';
       return;
     }
-    if (!geometry) return;
+    if (!geometry || !desktop.clientWidth || !hero.clientHeight) return;
     const position = slot!.getBoundingClientRect();
     const stage = hero.getBoundingClientRect();
     const width = hero.clientWidth, height = hero.clientHeight;
@@ -95,6 +99,15 @@ export function createMonitorFlight(hero: HTMLElement) {
     trigger: journey,
     start: 'top top',
     end: () => `+=${distance()}`,
+    snap: {
+      // Finish entering once the monitor fills most of the view. Scrolling
+      // back remains free, as does scrolling inside/below the desktop.
+      snapTo: (value: number, self?: ScrollTrigger) => self && self.direction > 0 && value >= 0.72 ? 1 : value,
+      inertia: false,
+      delay: 0.18,
+      duration: { min: 0.2, max: 0.45 },
+      ease: 'power2.out',
+    },
     onUpdate: self => paint(self.progress),
     onRefresh: self => paint(self.progress),
   });
@@ -107,11 +120,16 @@ export function createMonitorFlight(hero: HTMLElement) {
   }
   window.addEventListener('qwave:skip-intro', skip, { signal: abort.signal });
   window.addEventListener('resize', () => {
+    // In-app browser chrome can emit resize without changing the stable
+    // scene viewport. Refreshing and scrolling on each event fights touch.
+    if (hero.clientHeight === viewportHeight && hero.clientWidth === viewportWidth) return;
+    trigger.getTween(true)?.kill();
     const progress = flight.progress;
     const start = journey!.getBoundingClientRect().top + window.scrollY;
     const previousDistance = parseFloat(journey!.style.getPropertyValue('--flight-travel'));
     const after = Math.max(0, window.scrollY - start - previousDistance);
     viewportHeight = hero.clientHeight;
+    viewportWidth = hero.clientWidth;
     journey!.style.setProperty('--flight-travel', `${distance()}px`);
     ScrollTrigger.refresh();
     if (window.scrollY >= start) {
@@ -126,6 +144,8 @@ export function createMonitorFlight(hero: HTMLElement) {
   });
 
   return () => {
+    const enteredJourney = flight.progress > 0;
+    const desktopOffset = Math.max(0, -slot.getBoundingClientRect().top);
     cancelAnimationFrame(entryFrame);
     abort.abort();
     trigger.kill();
@@ -140,6 +160,16 @@ export function createMonitorFlight(hero: HTMLElement) {
     desktop.removeAttribute('aria-hidden');
     if (originalStyle === null) desktop.removeAttribute('style');
     else desktop.setAttribute('style', originalStyle);
+    for (const { element, value } of scrollStyles) {
+      if (value) element.style.setProperty('scroll-behavior', value);
+      else element.style.removeProperty('scroll-behavior');
+    }
+    // Losing WebGL removes the tall journey. Keep the visitor at the usable
+    // desktop instead of letting scroll clamping drop them at the footer.
+    // A detached hero belongs to a route that Astro has already replaced.
+    if (hero.isConnected && enteredJourney) {
+      window.scrollTo({ top: slot.getBoundingClientRect().top + window.scrollY + desktopOffset, behavior: 'instant' });
+    }
     listeners.forEach(listener => listener());
   };
 }
