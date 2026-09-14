@@ -2,6 +2,7 @@ import { test, expect, devices, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
 async function progress(page: Page, value: number) {
+  await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'ready', { timeout: 20000 });
   await page.evaluate(value => {
     const journey = document.querySelector<HTMLElement>('.monitor-journey')!;
     const distance = parseFloat(journey.style.getPropertyValue('--flight-travel'));
@@ -173,4 +174,82 @@ test('entry button skips the active camera journey and focuses the desktop', asy
   await expect(page.locator('body')).toHaveClass(/monitor-entered/);
   await expect(page.locator('#desktop-title')).toBeFocused();
   expect((await page.locator('#desktop').boundingBox())!.y).toBeCloseTo(0, 0);
+});
+
+for (const [name, width, height] of [['desktop', 1440, 960], ['mobile', 390, 844]] as const) {
+  for (const hash of ['', '#desktop']) {
+    test(`browser history restores the camera and scroll on ${name} from /${hash}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.goto(`/${hash}`);
+      await progress(page, 1);
+      const originalScroll = await page.evaluate(() => scrollY);
+      for (const section of ['about', 'contact']) {
+        await page.locator(`#shortcut-${section}`).click();
+        await expect(page).toHaveURL(new RegExp(`/${section}/$`));
+        await expect(page.locator('[data-route-heading]')).toBeFocused();
+        await page.goBack();
+        await expect(page.locator('body')).toHaveClass(/monitor-entered/);
+        await expect(page.locator(`#shortcut-${section}`)).toBeFocused();
+        await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(originalScroll, 0);
+        await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'ready', { timeout: 20000 });
+        // Loading the scene must leave the restored desktop in place.
+        expect((await page.locator('#desktop').boundingBox())!.y).toBeCloseTo(0, 0);
+        await progress(page, 0.45);
+        await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '1');
+        const middleScroll = await page.evaluate(() => scrollY);
+        await page.goForward();
+        await expect(page).toHaveURL(new RegExp(`/${section}/$`));
+        await expect(page.locator('[data-route-heading]')).toBeFocused();
+        await page.goBack();
+        await expect(page.locator('body')).toHaveClass(/has-monitor-flight/);
+        await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(middleScroll, 0);
+        await progress(page, 1);
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+}
+
+test('desktop stays usable through Back while the model is still loading', async ({ page }) => {
+  let release!: () => void;
+  const modelGate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/*.glb', async route => { await modelGate; await route.continue(); });
+  try {
+    await page.goto('/about/');
+    await page.locator('[data-return-desktop]').first().click();
+    await expect(page.locator('body')).toHaveClass(/monitor-entered/);
+    await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'poster');
+    await page.locator('#shortcut-contact').click();
+    await expect(page).toHaveURL(/\/contact\/$/);
+    await page.goBack();
+    await expect(page.locator('#shortcut-contact')).toBeFocused();
+    const before = await page.evaluate(() => scrollY);
+    release();
+    await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'ready', { timeout: 20000 });
+    expect(await page.evaluate(() => scrollY)).toBeCloseTo(before, 0);
+    expect((await page.locator('#desktop').boundingBox())!.y).toBeCloseTo(0, 0);
+    await progress(page, 0.45);
+    await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '1');
+  } finally { release(); }
+});
+
+test('one live desktop is visible on the monitor throughout the camera journey', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'ready', { timeout: 20000 });
+  const initialTop = (await page.locator('#desktop').boundingBox())!.y;
+  const initialScroll = await page.evaluate(() => scrollY);
+  await progress(page, 0);
+  const headerScroll = await page.evaluate(() => scrollY) - initialScroll;
+  expect((await page.locator('#desktop').boundingBox())!.y).toBeCloseTo(initialTop - headerScroll, 0);
+  const desktop = await page.locator('#desktop').elementHandle();
+  await expect(page.locator('#desktop')).toHaveCSS('opacity', '1');
+  expect((await page.locator('#desktop').boundingBox())!.width).toBeLessThan(1000);
+  for (const value of [0.45, 1, 0.45, 0]) {
+    await progress(page, value);
+    expect(await desktop!.evaluate(el => el === document.getElementById('desktop'))).toBe(true);
+    await expect(page.locator('#desktop')).toHaveCount(1);
+    await expect(page.locator('#desktop')).toHaveCSS('opacity', '1');
+  }
 });

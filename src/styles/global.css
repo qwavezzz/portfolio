@@ -332,7 +332,8 @@ portfolio-folder[data-enhanced] .portfolio-window { position: absolute; z-index:
 .has-monitor-flight .hero-live { opacity: clamp(0, calc((1 - var(--flight-progress, 0)) * 10), 1); }
 .has-monitor-flight .desktop-slot { position: relative; z-index: 4; margin-top: -100svh; }
 .has-monitor-flight .desktop { width: 100%; margin: 0; scroll-margin: 0; transform-origin: 0 0; }
-.has-monitor-flight:not(.monitor-entered) .desktop { max-height: 100svh; overflow: hidden; pointer-events: none; will-change: transform; }
+.has-monitor-flight:not(.monitor-entered) .desktop-slot { min-height: 100svh; }
+.has-monitor-flight:not(.monitor-entered) .desktop { position: absolute; top: 0; left: 0; z-index: 1; max-height: 100svh; overflow: hidden; pointer-events: none; will-change: transform; }
 @media (min-width: 768px) {
   .has-monitor-flight .desktop-field { min-height: max(640px, calc(100svh - 113px)); }
 }

@@ -39,12 +39,20 @@ for (const [name, width, height] of [['desktop', 1440, 960], ['mobile', 390, 844
     expect(await page.evaluate(() => (window as any).__pagesSession)).toBe(true);
     await page.locator('[data-return-desktop]').first().click();
     await expect(page.locator('#shortcut-about')).toBeFocused();
-    await expect(page.locator('body')).not.toHaveClass(/has-monitor-flight/);
+    await expect(page.locator('body')).toHaveClass(/has-monitor-flight/);
     await page.locator('#shortcut-contact').click();
     await expect(page).toHaveURL(url('contact/'));
     await page.goBack();
     await expect(page.locator('#shortcut-contact')).toBeFocused();
-    await expect(page.locator('body')).not.toHaveClass(/has-monitor-flight/);
+    await expect(page.locator('body')).toHaveClass(/has-monitor-flight/);
+    await expect(page.locator('[data-scene-state]')).toHaveAttribute('data-scene-state', 'ready', { timeout: 20000 });
+    await page.evaluate(() => {
+      const journey = document.querySelector<HTMLElement>('.monitor-journey')!;
+      const distance = parseFloat(journey.style.getPropertyValue('--flight-travel'));
+      scrollTo({ top: journey.getBoundingClientRect().top + scrollY + distance * 0.45, behavior: 'instant' });
+    });
+    await expect(page.locator('body')).not.toHaveClass(/monitor-entered/);
+    await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '1');
     await page.goto(url('about/'));
     await page.reload();
     await expect(page).toHaveTitle('qwave — Обо мне');

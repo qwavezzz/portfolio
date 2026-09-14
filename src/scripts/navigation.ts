@@ -1,24 +1,39 @@
-import type { TransitionBeforePreparationEvent } from 'astro:transitions/client';
+import type { TransitionBeforePreparationEvent, TransitionBeforeSwapEvent } from 'astro:transitions/client';
 import { navigate } from 'astro:transitions/client';
 import { withBase } from '../lib/paths';
+import { ensureMonitorFlight, refreshMonitorFlight, stopMonitorFlight } from '../lib/monitor-flight';
 
 let firstLoad = true;
 let isHistoryNavigation = false;
 let explicitDesktopReturn = false;
 let shortcutId: string | null = null;
-let sourceScroll = 0;
 let sourceDesktopOffset = 0;
-let sourceWasFlight = false;
 let desktopEntry = false;
+
+ensureMonitorFlight();
+
+document.addEventListener('astro:before-swap', event => {
+  const navigation = event as TransitionBeforeSwapEvent;
+  const swap = navigation.swap;
+  navigation.swap = () => {
+    stopMonitorFlight(false);
+    swap();
+    // This runs before Astro restores scrollY, including browser Back/Forward.
+    // A late GLB no longer changes the document height under the visitor.
+    ensureMonitorFlight();
+  };
+});
+document.addEventListener('astro:after-swap', refreshMonitorFlight);
+window.addEventListener('pageshow', refreshMonitorFlight);
 
 document.addEventListener('click', async (event) => {
   const anchor = (event.target as Element)?.closest<HTMLAnchorElement>('a');
   if (!anchor || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
   if (anchor.hasAttribute('data-shortcut')) {
     shortcutId = anchor.id;
-    sourceScroll = window.scrollY;
-    sourceWasFlight = document.body.classList.contains('has-monitor-flight');
-    sourceDesktopOffset = -(document.getElementById('desktop')?.getBoundingClientRect().top ?? 0);
+    sourceDesktopOffset = Math.max(0, -(document.getElementById('desktop')?.getBoundingClientRect().top ?? 0));
+    // Keep focus with the history entry, including an un-hashed home URL.
+    history.replaceState({ ...history.state, qwaveShortcut: shortcutId }, '');
   }
   explicitDesktopReturn = anchor.hasAttribute('data-return-desktop');
   desktopEntry = anchor.hasAttribute('data-enter-desktop') || anchor.hasAttribute('data-desktop-link');
@@ -63,19 +78,22 @@ document.addEventListener('astro:before-preparation', (event) => {
 });
 
 document.addEventListener('astro:page-load', () => {
-  const isDesktop = location.pathname === withBase('/') && location.hash === '#desktop';
-  const returning = isDesktop && (explicitDesktopReturn || isHistoryNavigation);
-  if (returning && shortcutId && document.getElementById(shortcutId)) {
-    if (explicitDesktopReturn || sourceWasFlight) {
-      // The desktop itself may still be projected into the monitor while the
-      // returning scene hydrates. Restore against its untransformed layout slot.
+  const isHome = location.pathname === withBase('/');
+  const isDesktop = isHome && location.hash === '#desktop';
+  if (isDesktop && !isHistoryNavigation && (firstLoad || explicitDesktopReturn || desktopEntry)) {
+    if (document.body.classList.contains('has-monitor-flight')) window.dispatchEvent(new Event('qwave:skip-intro'));
+    else document.getElementById('desktop')?.scrollIntoView({ behavior: 'instant' });
+    if (explicitDesktopReturn && shortcutId) {
       const desktopTop = (document.querySelector('.desktop-slot')?.getBoundingClientRect().top ?? 0) + window.scrollY;
-      if (sourceWasFlight) window.dispatchEvent(new Event('qwave:skip-intro'));
-      window.scrollTo({ top: sourceWasFlight ? desktopTop + sourceDesktopOffset : sourceScroll, behavior: 'instant' });
+      window.scrollTo({ top: desktopTop + sourceDesktopOffset, behavior: 'instant' });
+      refreshMonitorFlight();
     }
-    document.getElementById(shortcutId)?.focus({ preventScroll: true });
-  } else if (isDesktop) {
-    if (!isHistoryNavigation && (firstLoad || explicitDesktopReturn || desktopEntry)) document.getElementById('desktop')?.scrollIntoView({ behavior: 'instant' });
+  }
+  const focusId = isHome && isHistoryNavigation ? history.state?.qwaveShortcut : isDesktop && explicitDesktopReturn ? shortcutId : null;
+  const shortcut = typeof focusId === 'string' ? document.getElementById(focusId) : null;
+  if (shortcut && !shortcut.closest('[inert]')) {
+    shortcut.focus({ preventScroll: true });
+  } else if (isDesktop && !document.getElementById('desktop')?.inert) {
     document.getElementById('desktop-title')?.focus({ preventScroll: true });
   } else if (!firstLoad) {
     document.querySelector<HTMLElement>('[data-route-heading]')?.focus({ preventScroll: true });

@@ -1,22 +1,34 @@
 import { withBase } from '../../lib/paths';
 import { createRoot, extend, useFrame, useThree, type ReconcilerRoot } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, HemisphereLight, Mesh, PerspectiveCamera, PointLight, Vector3 } from 'three';
 import layout from '../../../assets-source/workstation-metadata.json';
 import { flight, onFlightChange, placeDesktop } from '../../lib/monitor-flight';
 
 extend({ AmbientLight, DirectionalLight, HemisphereLight, PointLight });
 
-function Scene({ active, compact, onReady }: { active: boolean; compact: boolean; onReady: () => void }) {
+function Scene({ active, compact, onReady, onError }: { active: boolean; compact: boolean; onReady: () => void; onError: () => void }) {
   const { scene } = useGLTF(withBase('/models/workstation.glb'));
-  const { camera, invalidate, size, gl } = useThree();
+  const { camera, advance, size, gl } = useThree();
   const first = useRef(true);
   const pointer = useRef({ x: 0, y: 0 });
   const target = useRef(new Vector3());
   const aim = useRef(new Vector3());
+  const pendingFrame = useRef<number | null>(null);
   const screenCenter = new Vector3().fromArray(layout.screen.center);
-  useEffect(() => onFlightChange(invalidate), [invalidate]);
+  const renderScene = useCallback(() => {
+    if (document.hidden || (!active && (!flight.enabled || flight.progress >= 1))) return;
+    try { advance(performance.now() / 1000); } catch { onError(); }
+  }, [active, advance, onError]);
+  const requestRender = useCallback(() => {
+    if (pendingFrame.current !== null) return;
+    pendingFrame.current = requestAnimationFrame(() => {
+      pendingFrame.current = null;
+      renderScene();
+    });
+  }, [renderScene]);
+  useEffect(() => onFlightChange(requestRender), [requestRender]);
   useEffect(() => {
     scene.traverse(object => {
       if (!(object instanceof Mesh)) return;
@@ -29,26 +41,33 @@ function Scene({ active, compact, onReady }: { active: boolean; compact: boolean
       }
     });
     gl.shadowMap.needsUpdate = true;
-    invalidate();
-  }, [scene, invalidate, gl]);
+  }, [scene, gl]);
+
+  useEffect(() => {
+    requestRender();
+    return () => {
+      if (pendingFrame.current !== null) cancelAnimationFrame(pendingFrame.current);
+      pendingFrame.current = null;
+    };
+  }, [requestRender, size.width, size.height]);
 
   useEffect(() => {
     const controller = new AbortController();
     const move = (event: PointerEvent) => {
       if (!active || (flight.enabled && flight.progress >= 1) || event.pointerType !== 'mouse') return;
       pointer.current = { x: event.clientX / window.innerWidth - 0.5, y: event.clientY / window.innerHeight - 0.5 };
-      invalidate();
+      requestRender();
     };
     window.addEventListener('pointermove', move, { passive: true, signal: controller.signal });
-    invalidate();
     return () => controller.abort();
-  }, [active, invalidate]);
+  }, [active, requestRender]);
 
   useFrame(() => {
-    if (!active) return;
     const hero = gl.domElement.closest<HTMLElement>('.hero');
-    if (!hero) return;
+    if (!hero?.isConnected) return;
     const progress = flight.enabled ? flight.progress : 0;
+    const screen = scene.getObjectByName(layout.screen.name);
+    if (screen) screen.visible = !flight.enabled;
     const align = Math.min(1, progress / 0.76);
     const ease = align * align * (3 - 2 * align);
     const perspective = camera as PerspectiveCamera;
@@ -144,8 +163,8 @@ export default function Workstation({ active, onReady, onError }: { active: bool
     if (!configured || !root.current) return;
     const renderer = root.current;
     let cancelled = false;
-    renderer.configure({ frameloop: active ? 'demand' : 'never' }).then(() => {
-      if (!cancelled) renderer.render(<ModelBoundary onError={onError}><Suspense fallback={null}><Scene active={active} compact={compact} onReady={onReady} /></Suspense></ModelBoundary>);
+    renderer.configure({ frameloop: 'never' }).then(() => {
+      if (!cancelled) renderer.render(<ModelBoundary onError={onError}><Suspense fallback={null}><Scene active={active} compact={compact} onReady={onReady} onError={onError} /></Suspense></ModelBoundary>);
     }).catch(() => { if (!cancelled) onError(); });
     return () => { cancelled = true; };
   }, [configured, active, compact, onReady, onError]);

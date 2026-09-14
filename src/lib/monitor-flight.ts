@@ -5,6 +5,29 @@ export type Point = { x: number; y: number };
 export const flight = { enabled: false, progress: 0 };
 const listeners = new Set<() => void>();
 let project: ((corners: Point[]) => void) | undefined;
+let currentHero: HTMLElement | undefined;
+let cleanupFlight: ((preservePosition?: boolean) => void) | undefined;
+
+// Layout belongs to the page lifecycle, not to the asynchronously loaded GLB.
+// Astro must see the full journey before it restores a history entry's scroll.
+export function ensureMonitorFlight() {
+  const hero = document.querySelector<HTMLElement>('.hero');
+  let disabled = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { disabled ||= localStorage.getItem('qwave-static') === 'true'; } catch { /* Storage is optional. */ }
+  if (!hero || disabled) { stopMonitorFlight(); return; }
+  if (currentHero === hero) return;
+  stopMonitorFlight(false);
+  currentHero = hero;
+  cleanupFlight = createMonitorFlight(hero);
+}
+
+export function stopMonitorFlight(preservePosition = true) {
+  cleanupFlight?.(preservePosition);
+  cleanupFlight = undefined;
+  currentHero = undefined;
+}
+
+export function refreshMonitorFlight() { ScrollTrigger.update(); }
 
 export function onFlightChange(listener: () => void) {
   listeners.add(listener);
@@ -60,8 +83,6 @@ export function createMonitorFlight(hero: HTMLElement) {
       return;
     }
     if (!geometry || !desktop.clientWidth || !hero.clientHeight) return;
-    const position = slot!.getBoundingClientRect();
-    const stage = hero.getBoundingClientRect();
     const width = hero.clientWidth, height = hero.clientHeight;
     // Once the bezel has left the viewport, the page resolves to viewport
     // aspect without an extra scroll, a duplicate DOM tree, or a cross-page cut.
@@ -69,8 +90,8 @@ export function createMonitorFlight(hero: HTMLElement) {
     const ease = mix * mix * (3 - 2 * mix);
     const viewport = [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: height }, { x: 0, y: height }];
     const corners = geometry.map((corner, i) => ({
-      x: corner.x + (viewport[i].x - corner.x) * ease - position.left,
-      y: corner.y + (viewport[i].y - corner.y) * ease + stage.top - position.top,
+      x: corner.x + (viewport[i].x - corner.x) * ease,
+      y: corner.y + (viewport[i].y - corner.y) * ease,
     }));
     desktop.style.transform = matrix(corners, desktop.clientWidth, height);
   }
@@ -85,16 +106,21 @@ export function createMonitorFlight(hero: HTMLElement) {
     hero.inert = flight.progress >= 0.2;
     document.body.classList.toggle('monitor-entered', interactive);
     if (previousInteractive !== interactive) {
+      // The live screen shares the sticky scene's coordinate system and
+      // stacking order. At exit the very same node returns to document flow.
+      (interactive ? slot! : hero).append(desktop);
       desktop.inert = !interactive;
       desktop.setAttribute('aria-hidden', String(!interactive));
       previousInteractive = interactive;
     }
-    desktop.style.opacity = String(clamp((flight.progress - 0.16) / 0.12));
-    updateProjection();
+    desktop.style.opacity = geometry || interactive ? '1' : '0';
+    if (interactive) desktop.style.transform = '';
+    // Camera, screen corners and WebGL render are advanced together by the
+    // subscriber. Never project yesterday's corners from a scroll callback.
     listeners.forEach(listener => listener());
   }
 
-  project = corners => { geometry = corners; updateProjection(); };
+  project = corners => { geometry = corners; updateProjection(); desktop.style.opacity = '1'; };
   trigger = ScrollTrigger.create({
     trigger: journey,
     start: 'top top',
@@ -140,15 +166,15 @@ export function createMonitorFlight(hero: HTMLElement) {
   }, { signal: abort.signal });
   const entryFrame = requestAnimationFrame(() => {
     ScrollTrigger.refresh();
-    if (location.hash === '#desktop') skip();
   });
 
-  return () => {
+  return (preservePosition = true) => {
     const enteredJourney = flight.progress > 0;
     const desktopOffset = Math.max(0, -slot.getBoundingClientRect().top);
     cancelAnimationFrame(entryFrame);
     abort.abort();
     trigger.kill();
+    if (desktop.parentElement !== slot) slot.append(desktop);
     project = undefined;
     flight.enabled = false;
     flight.progress = 0;
@@ -167,7 +193,7 @@ export function createMonitorFlight(hero: HTMLElement) {
     // Losing WebGL removes the tall journey. Keep the visitor at the usable
     // desktop instead of letting scroll clamping drop them at the footer.
     // A detached hero belongs to a route that Astro has already replaced.
-    if (hero.isConnected && enteredJourney) {
+    if (preservePosition && hero.isConnected && enteredJourney) {
       window.scrollTo({ top: slot.getBoundingClientRect().top + window.scrollY + desktopOffset, behavior: 'instant' });
     }
     listeners.forEach(listener => listener());
